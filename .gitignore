@@ -1,0 +1,24 @@
+# Dépendances Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Dépendances Backend
+backend/__pycache__/
+backend/venv/
+backend/.env
+
+# Base de données (On utilise Postgres ou Neon sur le cloud)
+*.db
+*.sqlite3
+
+# Divers
+.DS_Store
+.vscode/
+.idea/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vercel
+dist/
+build/
