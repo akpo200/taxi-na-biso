@@ -14,8 +14,27 @@ clients = [
     ("Marie-José", "+243 81 000 1122", "VIP (Sedan Luxe)", 8, "Argent"),
 ]
 
+def init_db(conn):
+    cursor = conn.cursor()
+    # On s'assure que la table existe avant de peupler
+    # Note: On utilise le type INTEGER PRIMARY KEY AUTOINCREMENT pour SQLite par défaut ici
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS clients (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nom TEXT NOT NULL,
+            telephone TEXT NOT NULL UNIQUE,
+            vehicule_prefere TEXT,
+            notes TEXT,
+            palier TEXT DEFAULT 'Nouveau',
+            total_courses INTEGER DEFAULT 0,
+            date_creation TEXT
+        )
+    ''')
+    conn.commit()
+
 def populate():
     conn = sqlite3.connect(DB_NAME)
+    init_db(conn) # Initialisation ajoutée
     cursor = conn.cursor()
     
     date_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -27,7 +46,7 @@ def populate():
                 VALUES (?, ?, ?, ?, ?, ?)
             ''', (nom, tel, vehicule, courses, palier, date_now))
         except sqlite3.IntegrityError:
-            pass # Éviter les doublons lors des relancements
+            pass # Éviter les doublons
             
     conn.commit()
     conn.close()
