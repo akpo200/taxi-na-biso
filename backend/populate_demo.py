@@ -1,10 +1,24 @@
 import sqlite3
+import os
 from datetime import datetime
 import random
 
-DB_NAME = "crm_taxi_na_biso.db"
+# --- Logic Alignée avec main.py ---
+DB_NAME = os.environ.get("DATABASE_URL", "crm_taxi_na_biso.db")
+IS_POSTGRES = DB_NAME.startswith("postgres")
 
-clients = [
+def get_db_connection():
+    if IS_POSTGRES:
+        import psycopg2
+        url = DB_NAME
+        if "sslmode" not in url:
+            url += "?sslmode=require" if "?" in url else "?sslmode=require"
+        conn = psycopg2.connect(url)
+    else:
+        conn = sqlite3.connect(DB_NAME)
+    return conn
+
+clients_demo = [
     ("Christelle Mbaye", "+243 81 234 5678", "Basic (Toyota Aygo)", 0, "Nouveau"),
     ("Jean-Claude Bolamba", "+243 82 111 2233", "Confort (SUV)", 12, "Argent"),
     ("Nancy Akpo", "+243 85 999 0011", "VIP (Sedan Luxe)", 45, "VIP"),
@@ -16,11 +30,11 @@ clients = [
 
 def init_db(conn):
     cursor = conn.cursor()
-    # On s'assure que la table existe avant de peupler
-    # Note: On utilise le type INTEGER PRIMARY KEY AUTOINCREMENT pour SQLite par défaut ici
-    cursor.execute('''
+    id_type = "SERIAL PRIMARY KEY" if IS_POSTGRES else "INTEGER PRIMARY KEY AUTOINCREMENT"
+    
+    create_table_query = f'''
         CREATE TABLE IF NOT EXISTS clients (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type},
             nom TEXT NOT NULL,
             telephone TEXT NOT NULL UNIQUE,
             vehicule_prefere TEXT,
@@ -29,24 +43,33 @@ def init_db(conn):
             total_courses INTEGER DEFAULT 0,
             date_creation TEXT
         )
-    ''')
+    '''
+    cursor.execute(create_table_query)
     conn.commit()
 
 def populate():
-    conn = sqlite3.connect(DB_NAME)
-    init_db(conn) # Initialisation ajoutée
+    print(f"Connexion à la base de données: {'PostgreSQL' if IS_POSTGRES else 'SQLite'}...")
+    conn = get_db_connection()
+    init_db(conn)
     cursor = conn.cursor()
     
     date_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    for nom, tel, vehicule, courses, palier in clients:
+    for nom, tel, vehicule, courses, palier in clients_demo:
         try:
-            cursor.execute('''
+            # Gestion des paramètres selon le dialecte
+            param_char = "$" if IS_POSTGRES else "?"
+            p = [param_char] * 6
+            if IS_POSTGRES: p = [f"${i+1}" for i in range(6)]
+            
+            insert_query = f'''
                 INSERT INTO clients (nom, telephone, vehicule_prefere, total_courses, palier, date_creation)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (nom, tel, vehicule, courses, palier, date_now))
-        except sqlite3.IntegrityError:
-            pass # Éviter les doublons
+                VALUES ({", ".join(p)})
+            '''
+            cursor.execute(insert_query, (nom, tel, vehicule, courses, palier, date_now))
+        except Exception as e:
+            # Erreur d'intégrité (doublon) ignorée silencieusement
+            pass
             
     conn.commit()
     conn.close()
