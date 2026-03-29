@@ -1,8 +1,7 @@
-fastapi==0.115.0
-uvicorn[standard]==0.31.0
-pydantic==2.9.2
-python-multipart==0.0.12
-python-dateutil==2.9.0
-typing-extensions==4.12.2
-psycopg2-binary==2.9.9
-aiofiles==24.1.0
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+python-dateutil
+psycopg2-binary
+aiofiles
