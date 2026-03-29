@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: taxi-na-biso-crm
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATABASE_URL
+        fromDatabase:
+          name: taxi-na-biso-db
+          property: connectionString
+    # Disk mapping for SQLite if you don't use Postgres (optional)
+    # disk:
+    #   name: taxi-data
+    #   mountPath: /data
+    #   sizeGB: 1
+
+databases:
+  - name: taxi-na-biso-db
+    plan: free
